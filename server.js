@@ -2,8 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const querystring = require('querystring');
-const date = new Date().toLocaleString();
-const entry = `${name} (${email}) wrote: ${message} at ${date}\n\n`;
+
 
 const PORT = 5050;
 
