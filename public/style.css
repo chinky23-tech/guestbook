@@ -27,6 +27,15 @@ button {
   cursor: pointer;
 
 }
+.btn-clear {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-delete {
+    background: #ffc107;
+    color: black;
+}
 .messages {
   text-align: left;
   width: 300px;

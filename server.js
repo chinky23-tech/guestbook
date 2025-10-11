@@ -47,6 +47,50 @@ const server = http.createServer((req, res) => {
       });
     });
   }
+//clear all messages
+else if(req.url === '/clear' && req.method === 'POST'){
+  fs.writeFile('messages.txt', '' , (err) => {
+    if(err){
+      console.error(err);
+      res.writeHead(500, {'Content-Type' : 'text/plain'});
+      return res.end('Error clearing messages');
+    }
+    res.writeHead(302,{Location: '/'});
+    res.end();
+  });
+}
+//delete last message
+else if(req.url === '/delete-last' && req.method === 'POST'){
+  fs.readFile('messages.txt', 'utf8' ,(err, data) => {
+if(err){
+  res.writeHead(302, { Location: '/'});
+  return res.end();
+}
+if(data.trim() === ''){
+  //file is empty
+  res.writeHead(302, {Location: '/'});
+  return res.end();
+}
+
+// split by newline and remove last message
+const messages = data.split('\n').filter(line => line.trim() !== '');
+messages.pop(); // remove last message
+
+//write remianing messages back to file
+fs.writeFile('messages.txt' , messages.join('\n') + (messages.length > 0 ? '\n' : ''),
+(err) => {
+if(err){
+  console.error(err);
+  res.writeHead(500, { 'Content-Type' : 'text/plain'});
+  return res.end('Error deleting last message');
+}
+res.writeHead(302, { Location: '/'});
+res.end();
+});
+
+  });
+}
+
 
   // 404
   else {

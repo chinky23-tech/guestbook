@@ -13,6 +13,16 @@
         <textarea name="message" placeholder="Your message" required></textarea><br>
         <button type="submit">Post Message</button>
     </form>
+     <div class="controls">
+            <form action="/clear" method="POST" style="display: inline;">
+                <button type="submit" class="btn-clear">Clear All Messages</button>
+            </form>
+            
+            <form action="/delete-last" method="POST" style="display: inline;">
+                <button type="submit" class="btn-delete">Delete Last Message</button>
+            </form>
+        </div>
+
     <h2>Message</h2>
     <div class="message">
         {{messages}}
