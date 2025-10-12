@@ -90,7 +90,36 @@ res.end();
 
   });
 }
+// COPY this from your working delete route:
+else if(req.url === '/delete-last' && req.method === 'POST'){
+  // your existing code
+}
 
+// NOW MODIFY it for edit:
+else if(req.url === '/edit' && req.method === 'POST'){
+  let body = '';
+  req.on('data', chunk => (body += chunk.toString()));
+  req.on('end', () => {
+    const formData = querystring.parse(body);
+    const messageId = formData.messageId;
+    const newMessage = formData.newMessage;
+    
+    // Read all messages
+    fs.readFile('messages.txt', 'utf8', (err, data) => {
+      if (err) {
+        res.writeHead(302, { Location: '/' });
+        return res.end();
+      }
+      
+      // Split messages and find the one to edit
+      const messages = data.split('\n').filter(line => line.trim() !== '');
+      // Update logic here (we'll complete this next)
+      
+      res.writeHead(302, { Location: '/' });
+      res.end();
+    });
+  });
+}
 
   // 404
   else {

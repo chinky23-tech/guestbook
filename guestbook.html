@@ -27,11 +27,15 @@
         </div>
 
         <!-- Messages Display -->
-        <div class="messages">
-            <h2>Messages:</h2>
-            <div id="messages-container">
+          <div id="messages-container">
                 {{messages}}
             </div>
+        <div class="messages">
+        john: hellow everyone!
+           <form action ="/edit" method="POST" style="display: inline;">
+            <input type="hidden" name="messageId" value="1">
+            <button type="submit">Edit</button>
+           </form>
         </div>
     </div>
 </body>
