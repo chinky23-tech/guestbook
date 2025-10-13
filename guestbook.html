@@ -15,7 +15,7 @@
             <button type="submit" class="btn-submit">Add Message</button>
         </form>
 
-        <!-- ADD THESE BUTTONS -->
+        <!-- Control Buttons -->
         <div class="controls">
             <form action="/clear" method="POST" style="display: inline;">
                 <button type="submit" class="btn-clear">Clear All Messages</button>
@@ -27,15 +27,11 @@
         </div>
 
         <!-- Messages Display -->
-          <div id="messages-container">
+        <div class="messages">
+            <h2>Messages:</h2>
+            <div id="messages-container">
                 {{messages}}
             </div>
-        <div class="messages">
-        <h2>messages:</h2>
-           <form action ="/edit" method="POST" style="display: inline;">
-            <input type="hidden" name="messageId" value="1">
-            <button type="submit">Edit</button>
-           </form>
         </div>
     </div>
 </body>

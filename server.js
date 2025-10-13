@@ -3,8 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const querystring = require('querystring');
 
-
-const PORT = 5050;
+const PORT = 8080;
 
 const server = http.createServer((req, res) => {
   // Serve CSS
@@ -26,8 +25,30 @@ const server = http.createServer((req, res) => {
     fs.readFile('messages.txt', 'utf8', (err, messages) => {
       if (err) messages = 'No messages yet.';
       fs.readFile('guestbook.html', (err, html) => {
+        if (err) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          return res.end('Error loading guestbook');
+        }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        const page = html.toString().replace('{{messages}}', messages.replace(/\n/g, '<br>'));
+        const formattedMessages = messages
+          .split('\n')
+          .filter(line => line.trim() !== '')
+          .map((message, index) => {
+            return `
+              <div class="message-item">
+                <strong>${message}</strong>
+                <form action="/edit" method="POST" style="display: inline;">
+                  <input type="hidden" name="messageId" value="${index}">
+                  <input type="text" name="newMessage" placeholder="New message" required>
+                  <button type="submit">Edit</button>
+                </form>
+              </div>
+            `;
+          })
+          .join('');
+        
+        const page = html.toString().replace('{{messages}}', 
+          formattedMessages || 'No messages yet.');
         res.end(page);
       });
     });
@@ -42,84 +63,96 @@ const server = http.createServer((req, res) => {
       const entry = `${formData.name}: ${formData.message}\n`;
       fs.appendFile('messages.txt', entry, err => {
         if (err) console.error(err);
-        res.writeHead(302, { Location: '/' }); // redirect to homepage
+        res.writeHead(302, { Location: '/' });
         res.end();
       });
     });
   }
-//clear all messages
-else if(req.url === '/clear' && req.method === 'POST'){
-  fs.writeFile('messages.txt', '' , (err) => {
-    if(err){
-      console.error(err);
-      res.writeHead(500, {'Content-Type' : 'text/plain'});
-      return res.end('Error clearing messages');
-    }
-    res.writeHead(302,{Location: '/'});
-    res.end();
-  });
-}
-//delete last message
-else if(req.url === '/delete-last' && req.method === 'POST'){
-  fs.readFile('messages.txt', 'utf8' ,(err, data) => {
-if(err){
-  res.writeHead(302, { Location: '/'});
-  return res.end();
-}
-if(data.trim() === ''){
-  //file is empty
-  res.writeHead(302, {Location: '/'});
-  return res.end();
-}
 
-// split by newline and remove last message
-const messages = data.split('\n').filter(line => line.trim() !== '');
-messages.pop(); // remove last message
+  // Clear all messages
+  else if (req.url === '/clear' && req.method === 'POST') {
+    fs.writeFile('messages.txt', '', (err) => {
+      if (err) {
+        console.error(err);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Error clearing messages');
+      }
+      res.writeHead(302, { Location: '/' });
+      res.end();
+    });
+  }
 
-//write remianing messages back to file
-fs.writeFile('messages.txt' , messages.join('\n') + (messages.length > 0 ? '\n' : ''),
-(err) => {
-if(err){
-  console.error(err);
-  res.writeHead(500, { 'Content-Type' : 'text/plain'});
-  return res.end('Error deleting last message');
-}
-res.writeHead(302, { Location: '/'});
-res.end();
-});
-
-  });
-}
-// COPY this from your working delete route:
-else if(req.url === '/delete-last' && req.method === 'POST'){
-  // your existing code
-}
-
-// NOW MODIFY it for edit:
-else if(req.url === '/edit' && req.method === 'POST'){
-  let body = '';
-  req.on('data', chunk => (body += chunk.toString()));
-  req.on('end', () => {
-    const formData = querystring.parse(body);
-    const messageId = formData.messageId;
-    const newMessage = formData.newMessage;
-    
-    // Read all messages
+  // Delete last message
+  else if (req.url === '/delete-last' && req.method === 'POST') {
     fs.readFile('messages.txt', 'utf8', (err, data) => {
       if (err) {
         res.writeHead(302, { Location: '/' });
         return res.end();
       }
-      
-      // Split messages and find the one to edit
+      if (data.trim() === '') {
+        res.writeHead(302, { Location: '/' });
+        return res.end();
+      }
+
       const messages = data.split('\n').filter(line => line.trim() !== '');
-      // Update logic here (we'll complete this next)
-      
-      res.writeHead(302, { Location: '/' });
-      res.end();
+      messages.pop();
+
+      fs.writeFile('messages.txt', messages.join('\n') + (messages.length > 0 ? '\n' : ''), (err) => {
+        if (err) {
+          console.error(err);
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          return res.end('Error deleting last message');
+        }
+        res.writeHead(302, { Location: '/' });
+        res.end();
+      });
     });
-  });
-}
+  }
+
+  // Edit message
+  else if (req.url === '/edit' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => (body += chunk.toString()));
+    req.on('end', () => {
+      const formData = querystring.parse(body);
+      const messageId = parseInt(formData.messageId);
+      const newMessage = formData.newMessage;
+
+      if (isNaN(messageId) || !newMessage) {
+        res.writeHead(302, { Location: '/' });
+        return res.end();
+      }
+
+      fs.readFile('messages.txt', 'utf8', (err, data) => {
+        if (err) {
+          res.writeHead(302, { Location: '/' });
+          return res.end();
+        }
+
+        const messages = data.split('\n').filter(line => line.trim() !== '');
+        
+        if (messageId >= 0 && messageId < messages.length) {
+          // Extract the name part and keep it, only change the message part
+          const oldMessage = messages[messageId];
+          const namePart = oldMessage.split(':')[0];
+          messages[messageId] = `${namePart}: ${newMessage}`;
+          
+          fs.writeFile('messages.txt', messages.join('\n') + (messages.length > 0 ? '\n' : ''), (err) => {
+            if (err) {
+              console.error(err);
+              res.writeHead(500, { 'Content-Type': 'text/plain' });
+              return res.end('Error editing message');
+            }
+            res.writeHead(302, { Location: '/' });
+            res.end();
+          });
+        } else {
+          res.writeHead(302, { Location: '/' });
+          res.end();
+        }
+      });
+    });
+  }
 
   // 404
   else {
@@ -127,7 +160,6 @@ else if(req.url === '/edit' && req.method === 'POST'){
     res.end('<h2>404 Not Found</h2>');
   }
 });
-
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
